@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.example.backend.exception.BadRequestException;
+import com.example.backend.dto.CreateAccountRequest;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.model.Account;
 import com.example.backend.model.AccountStatus;
@@ -42,20 +42,18 @@ public class AccountService {
         return accountRepository.findByCustomer(customer);
     }
 
-    public Account createAccount(Account account) {
-        if (account.getCustomer() == null || account.getCustomer().getId() == null) {
-            throw new BadRequestException("Customer must be specified when creating an account");
-        }
-
-        Customer customer = customerRepository.findById(account.getCustomer().getId())
+    public Account createAccount(CreateAccountRequest request) {
+        Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Customer not found with id: " + account.getCustomer().getId()));
+                        "Customer not found with id: " + request.getCustomerId()));
 
-        account.setCustomer(customer);
-
-        if (account.getAccountNumber() == null || account.getAccountNumber().isEmpty()) {
-            account.setAccountNumber(generateAccountNumber());
-        }
+        Account account = Account.builder()
+                .accountType(request.getAccountType())
+                .accountNumber(generateAccountNumber())
+                .balance(java.math.BigDecimal.ZERO)
+                .status(AccountStatus.ACTIVE)
+                .customer(customer)
+                .build();
 
         return accountRepository.save(account);
     }

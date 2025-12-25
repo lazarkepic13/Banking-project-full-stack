@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.backend.dto.CreateAccountRequest;
 import com.example.backend.model.Account;
 import com.example.backend.service.AccountService;
 
@@ -55,8 +56,8 @@ public class AccountController {
     }
 
     @PostMapping
-    public ResponseEntity<Account> createAccount(@Valid @RequestBody Account account) {
-        Account createdAccount = accountService.createAccount(account);
+    public ResponseEntity<Account> createAccount(@Valid @RequestBody CreateAccountRequest request) {
+        Account createdAccount = accountService.createAccount(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdAccount);
     }
 
