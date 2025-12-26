@@ -41,6 +41,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/test").permitAll()
                 .requestMatchers("/api/health").permitAll()
+                .requestMatchers("/api/generate-hash").permitAll()
+                .requestMatchers("/api/create-admin").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

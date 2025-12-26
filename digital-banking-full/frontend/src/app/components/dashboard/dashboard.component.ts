@@ -22,7 +22,7 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       </div>
 
       <div class="content">
-        <h2>Dobrodošli na dashboard!</h2>
+        <h2>Dobrodošli na početnu stranicu!</h2>
 
         <!-- Računi -->
         <div class="section">

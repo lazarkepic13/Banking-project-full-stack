@@ -201,8 +201,16 @@ export class LoginComponent {
         })
       )
       .subscribe({
-        next: () => {
-          this.router.navigate(['/dashboard']);
+        next: (response: any) => {
+          const role = response?.role || this.authService.getCurrentRole();
+          // Preusmeri na odgovarajući panel na osnovu role
+          if (role === 'ADMIN') {
+            this.router.navigate(['/admin']);
+          } else if (role === 'EMPLOYEE') {
+            this.router.navigate(['/employee']);
+          } else {
+            this.router.navigate(['/dashboard']);
+          }
         },
         error: (err: any) => {
           console.error('Login error:', err);

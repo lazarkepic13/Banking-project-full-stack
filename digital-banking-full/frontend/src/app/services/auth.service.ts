@@ -23,6 +23,7 @@ export class AuthService {
   private apiUrl = environment.apiUrl;
   private tokenKey = 'authToken';
   private userKey = 'currentUser';
+  private roleKey = 'userRole';
 
   private get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -37,6 +38,9 @@ export class AuthService {
             localStorage.setItem(this.tokenKey, response.token);
             if (response.user) {
               localStorage.setItem(this.userKey, JSON.stringify(response.user));
+            }
+            if (response.role) {
+              localStorage.setItem(this.roleKey, response.role);
             }
           }
         })
@@ -67,10 +71,28 @@ export class AuthService {
     return user ? user.id : null;
   }
 
+  getCurrentRole(): string | null {
+    if (!this.isBrowser) return null;
+    return localStorage.getItem(this.roleKey);
+  }
+
+  isAdmin(): boolean {
+    return this.getCurrentRole() === 'ADMIN';
+  }
+
+  isEmployee(): boolean {
+    return this.getCurrentRole() === 'EMPLOYEE';
+  }
+
+  isCustomer(): boolean {
+    return this.getCurrentRole() === 'CUSTOMER';
+  }
+
   logout(): void {
     if (!this.isBrowser) return;
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
+    localStorage.removeItem(this.roleKey);
   }
 }
 
