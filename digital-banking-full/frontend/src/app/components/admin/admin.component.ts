@@ -11,10 +11,10 @@ import { AuthService } from '../../services/auth.service';
   template: `
     <div class="admin-container">
       <div class="header">
-        <h1>Admin Panel</h1>
+        <h1>Admin početna stranica</h1>
         <div>
           <span class="user-info">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
-          <button (click)="logout()">Odjavi se</button>
+          <button (click)="logout()" class="logout-btn">Odjavi se</button>
         </div>
       </div>
 
@@ -203,6 +203,8 @@ import { AuthService } from '../../services/auth.service';
       max-width: 1600px;
       margin: 0 auto;
       min-height: 100vh;
+      position: relative;
+      z-index: 1;
     }
     .header {
       display: flex;
@@ -220,7 +222,7 @@ import { AuthService } from '../../services/auth.service';
       font-family: 'Poppins', sans-serif;
       font-size: 36px;
       font-weight: 700;
-      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -228,7 +230,7 @@ import { AuthService } from '../../services/auth.service';
     }
     button {
       padding: 12px 24px;
-      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
       color: white;
       border: none;
       border-radius: 10px;
@@ -237,11 +239,11 @@ import { AuthService } from '../../services/auth.service';
       font-weight: 600;
       font-family: 'Inter', sans-serif;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4), 0 2px 8px rgba(2, 132, 199, 0.3);
     }
     button:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5), 0 4px 12px rgba(2, 132, 199, 0.4);
     }
     button:disabled {
       opacity: 0.6;
@@ -253,6 +255,14 @@ import { AuthService } from '../../services/auth.service';
       font-size: 16px;
       color: #555;
       font-family: 'Inter', sans-serif;
+    }
+    .logout-btn {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%) !important;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4), 0 2px 8px rgba(220, 38, 38, 0.3) !important;
+    }
+    .logout-btn:hover {
+      background: linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%) !important;
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5), 0 4px 12px rgba(220, 38, 38, 0.4) !important;
     }
     .tabs {
       display: flex;
@@ -278,9 +288,9 @@ import { AuthService } from '../../services/auth.service';
       transform: none;
     }
     .tab-button.active {
-      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
       color: white;
-      box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4), 0 2px 8px rgba(2, 132, 199, 0.3);
     }
     .content {
       background: rgba(255, 255, 255, 0.95);
@@ -324,9 +334,9 @@ import { AuthService } from '../../services/auth.service';
       transform: none;
     }
     .filter-btn.active {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
       color: white;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4), 0 1px 4px rgba(2, 132, 199, 0.3);
     }
     .loading {
       text-align: center;
@@ -350,7 +360,8 @@ import { AuthService } from '../../services/auth.service';
     .user-card:hover {
       transform: translateY(-3px);
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-      border-color: #667eea;
+      border-color: #0ea5e9;
+      background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
     }
     .user-header {
       display: flex;
@@ -394,7 +405,7 @@ import { AuthService } from '../../services/auth.service';
       font-weight: 600;
     }
     .status-blocked {
-      color: #e74c3c;
+      color: #075985;
       font-weight: 600;
     }
     .status-pending {
@@ -404,7 +415,7 @@ import { AuthService } from '../../services/auth.service';
       color: #28a745;
     }
     .status-failed {
-      color: #e74c3c;
+      color: #075985;
     }
     .user-details {
       margin-bottom: 15px;
@@ -424,7 +435,12 @@ import { AuthService } from '../../services/auth.service';
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
     .btn-danger {
-      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4), 0 2px 8px rgba(2, 132, 199, 0.3);
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%);
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5), 0 4px 12px rgba(2, 132, 199, 0.4);
     }
     .btn-success {
       background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
@@ -449,7 +465,8 @@ import { AuthService } from '../../services/auth.service';
     .account-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-      border-color: #667eea;
+      border-color: #0ea5e9;
+      background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
     }
     .account-info {
       display: flex;
@@ -482,7 +499,7 @@ import { AuthService } from '../../services/auth.service';
       overflow: hidden;
     }
     thead {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 80%, #075985 100%);
       color: white;
     }
     th {
@@ -509,7 +526,7 @@ import { AuthService } from '../../services/auth.service';
       font-weight: 600;
     }
     .amount-withdraw, .amount-transfer {
-      color: #e74c3c;
+      color: #0369a1;
       font-weight: 600;
     }
   `]

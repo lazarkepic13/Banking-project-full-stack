@@ -43,6 +43,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/health").permitAll()
                 .requestMatchers("/api/generate-hash").permitAll()
                 .requestMatchers("/api/create-admin").permitAll()
+                .requestMatchers("/api/create-employee").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

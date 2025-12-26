@@ -173,6 +173,8 @@ import { AuthService } from '../../services/auth.service';
       border: 1px solid rgba(255, 255, 255, 0.2);
       max-height: 90vh;
       overflow-y: auto;
+      position: relative;
+      z-index: 1;
     }
     .register-container::-webkit-scrollbar {
       width: 8px;
@@ -182,7 +184,7 @@ import { AuthService } from '../../services/auth.service';
       border-radius: 10px;
     }
     .register-container::-webkit-scrollbar-thumb {
-      background: #667eea;
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
       border-radius: 10px;
     }
     h2 {
@@ -192,7 +194,7 @@ import { AuthService } from '../../services/auth.service';
       color: #333;
       margin-bottom: 35px;
       text-align: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -222,9 +224,9 @@ import { AuthService } from '../../services/auth.service';
     }
     input:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #0ea5e9;
       background: white;
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15), 0 0 0 6px rgba(56, 189, 248, 0.1);
     }
     input.error-input {
       border-color: #e74c3c;
@@ -293,12 +295,12 @@ import { AuthService } from '../../services/auth.service';
       font-size: 14px;
     }
     a {
-      color: #667eea;
+      color: #0ea5e9;
       font-weight: 600;
       transition: color 0.3s ease;
     }
     a:hover {
-      color: #764ba2;
+      color: #0284c7;
     }
   `]
 })

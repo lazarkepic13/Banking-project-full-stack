@@ -62,6 +62,8 @@ import { AuthService } from '../../services/auth.service';
       border-radius: 20px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+      z-index: 1;
     }
     h2 {
       font-family: 'Poppins', sans-serif;
@@ -70,7 +72,7 @@ import { AuthService } from '../../services/auth.service';
       color: #333;
       margin-bottom: 35px;
       text-align: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -100,9 +102,9 @@ import { AuthService } from '../../services/auth.service';
     }
     input:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #0ea5e9;
       background: white;
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15), 0 0 0 6px rgba(56, 189, 248, 0.1);
     }
     input.error-input {
       border-color: #e74c3c;
@@ -111,7 +113,7 @@ import { AuthService } from '../../services/auth.service';
     button {
       width: 100%;
       padding: 16px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
       color: white;
       border: none;
       border-radius: 10px;
@@ -121,11 +123,12 @@ import { AuthService } from '../../services/auth.service';
       font-family: 'Inter', sans-serif;
       transition: all 0.3s ease;
       margin-top: 10px;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4), 0 2px 8px rgba(2, 132, 199, 0.3);
     }
     button:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+      background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%);
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5), 0 4px 12px rgba(2, 132, 199, 0.4);
     }
     button:active:not(:disabled) {
       transform: translateY(0);
@@ -158,12 +161,12 @@ import { AuthService } from '../../services/auth.service';
       font-size: 14px;
     }
     a {
-      color: #667eea;
+      color: #0ea5e9;
       font-weight: 600;
       transition: color 0.3s ease;
     }
     a:hover {
-      color: #764ba2;
+      color: #0284c7;
     }
   `]
 })

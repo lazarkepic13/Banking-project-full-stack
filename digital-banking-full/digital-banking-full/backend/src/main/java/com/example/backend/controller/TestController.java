@@ -94,4 +94,60 @@ public class TestController {
             return ResponseEntity.ok(response);
         }
     }
+
+    @RequestMapping(value = "/create-employee", method = { RequestMethod.GET, RequestMethod.POST })
+    public ResponseEntity<Map<String, Object>> createEmployee(
+            @RequestParam(required = false, defaultValue = "employee@bank.com") String email,
+            @RequestParam(required = false, defaultValue = "employee123") String password,
+            @RequestParam(required = false, defaultValue = "Employee") String firstName,
+            @RequestParam(required = false, defaultValue = "User") String lastName) {
+        try {
+            // Proveri da li employee već postoji
+            if (employeeRepository.findByEmail(email).isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Employee korisnik sa email-om " + email + " već postoji!");
+                return ResponseEntity.ok(response);
+            }
+
+            // Generiši employee number
+            String employeeNumber = "EMP-" + System.currentTimeMillis();
+
+            // Kreiraj Employee
+            Employee employee = Employee.builder()
+                    .username(email.split("@")[0]) // Koristi deo pre @ kao username
+                    .password(passwordEncoder.encode(password))
+                    .email(email)
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .phoneNumber("+381600000001")
+                    .role(Role.EMPLOYEE)
+                    .active(true)
+                    .employeeNumber(employeeNumber)
+                    .hireDate(LocalDate.now())
+                    .position("Bank Employee")
+                    .department("Operations")
+                    .salary(BigDecimal.valueOf(50000))
+                    .canApproveTransactions(false)
+                    .build();
+
+            Employee saved = employeeRepository.save(employee);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Employee korisnik je uspešno kreiran!");
+            response.put("id", saved.getId());
+            response.put("email", saved.getEmail());
+            response.put("password", password);
+            response.put("role", saved.getRole());
+            response.put("employeeNumber", saved.getEmployeeNumber());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Greška pri kreiranju employee korisnika: " + e.getMessage());
+            return ResponseEntity.ok(response);
+        }
+    }
 }

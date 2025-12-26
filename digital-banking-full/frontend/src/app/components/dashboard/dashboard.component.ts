@@ -101,6 +101,235 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
           </div>
         </div>
 
+        <!-- Nova transakcija -->
+        <div class="section">
+          <div class="section-header">
+            <h3>Nova transakcija</h3>
+            <button
+              (click)="showTransactionForm = !showTransactionForm"
+              class="btn-primary">
+              {{ showTransactionForm ? 'Otkaži' : 'Kreiraj transakciju' }}
+            </button>
+          </div>
+
+          <div *ngIf="showTransactionForm" class="transaction-form-container">
+            <div class="transaction-tabs">
+              <button
+                (click)="activeTransactionType = 'deposit'"
+                [class.active]="activeTransactionType === 'deposit'"
+                class="transaction-tab">
+                Ulog
+              </button>
+              <button
+                (click)="activeTransactionType = 'withdraw'"
+                [class.active]="activeTransactionType === 'withdraw'"
+                class="transaction-tab">
+                Podizanje
+              </button>
+              <button
+                (click)="activeTransactionType = 'transfer'"
+                [class.active]="activeTransactionType === 'transfer'"
+                class="transaction-tab">
+                Prenos
+              </button>
+            </div>
+
+            <!-- DEPOSIT Forma -->
+            <div *ngIf="activeTransactionType === 'deposit'" class="transaction-form">
+              <h4>Ulog novca</h4>
+              <form (ngSubmit)="onDeposit()" #depositForm="ngForm">
+                <div class="form-group">
+                  <label for="depositAccount">Račun:</label>
+                  <select
+                    id="depositAccount"
+                    name="depositAccount"
+                    [(ngModel)]="depositFormData.accountId"
+                    required
+                    #depositAccountInput="ngModel">
+                    <option value="">Izaberi račun</option>
+                    <option *ngFor="let account of activeAccounts" [value]="account.id">
+                      {{ account.accountNumber }} - {{ account.accountType }} ({{ account.balance | number:'1.2-2' }} RSD)
+                    </option>
+                  </select>
+                  <div *ngIf="depositAccountInput.invalid && depositAccountInput.touched" class="validation-error">
+                    Račun je obavezan
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="depositAmount">Iznos (RSD):</label>
+                  <input
+                    type="number"
+                    id="depositAmount"
+                    name="depositAmount"
+                    [(ngModel)]="depositFormData.amount"
+                    required
+                    min="0.01"
+                    step="0.01"
+                    #depositAmountInput="ngModel"
+                    placeholder="0.00">
+                  <div *ngIf="depositAmountInput.invalid && depositAmountInput.touched" class="validation-error">
+                    Iznos mora biti veći od 0
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="depositDescription">Opis (opciono):</label>
+                  <input
+                    type="text"
+                    id="depositDescription"
+                    name="depositDescription"
+                    [(ngModel)]="depositFormData.description"
+                    placeholder="Opis transakcije">
+                </div>
+                <button type="submit" [disabled]="loadingTransaction || depositForm.invalid" class="btn-submit">
+                  <span *ngIf="!loadingTransaction">Ulog novca</span>
+                  <span *ngIf="loadingTransaction">Procesiranje...</span>
+                </button>
+                <div *ngIf="transactionError" class="error-message">{{ transactionError }}</div>
+                <div *ngIf="transactionSuccess" class="success-message">{{ transactionSuccess }}</div>
+              </form>
+            </div>
+
+            <!-- WITHDRAW Forma -->
+            <div *ngIf="activeTransactionType === 'withdraw'" class="transaction-form">
+              <h4>Podizanje novca</h4>
+              <form (ngSubmit)="onWithdraw()" #withdrawForm="ngForm">
+                <div class="form-group">
+                  <label for="withdrawAccount">Račun:</label>
+                  <select
+                    id="withdrawAccount"
+                    name="withdrawAccount"
+                    [(ngModel)]="withdrawFormData.accountId"
+                    required
+                    #withdrawAccountInput="ngModel">
+                    <option value="">Izaberi račun</option>
+                    <option *ngFor="let account of activeAccounts" [value]="account.id">
+                      {{ account.accountNumber }} - {{ account.accountType }} ({{ account.balance | number:'1.2-2' }} RSD)
+                    </option>
+                  </select>
+                  <div *ngIf="withdrawAccountInput.invalid && withdrawAccountInput.touched" class="validation-error">
+                    Račun je obavezan
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="withdrawAmount">Iznos (RSD):</label>
+                  <input
+                    type="number"
+                    id="withdrawAmount"
+                    name="withdrawAmount"
+                    [(ngModel)]="withdrawFormData.amount"
+                    required
+                    min="0.01"
+                    step="0.01"
+                    #withdrawAmountInput="ngModel"
+                    placeholder="0.00">
+                  <div *ngIf="withdrawAmountInput.invalid && withdrawAmountInput.touched" class="validation-error">
+                    Iznos mora biti veći od 0
+                  </div>
+                  <div *ngIf="withdrawFormData.accountId && withdrawFormData.amount && getAccountBalance(withdrawFormData.accountId) < withdrawFormData.amount"
+                       class="validation-error">
+                    Nemate dovoljno sredstava na računu
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="withdrawDescription">Opis (opciono):</label>
+                  <input
+                    type="text"
+                    id="withdrawDescription"
+                    name="withdrawDescription"
+                    [(ngModel)]="withdrawFormData.description"
+                    placeholder="Opis transakcije">
+                </div>
+                <button type="submit" [disabled]="loadingTransaction || withdrawForm.invalid || (withdrawFormData.accountId && withdrawFormData.amount && getAccountBalance(withdrawFormData.accountId) < withdrawFormData.amount)" class="btn-submit">
+                  <span *ngIf="!loadingTransaction">Podigni novac</span>
+                  <span *ngIf="loadingTransaction">Procesiranje...</span>
+                </button>
+                <div *ngIf="transactionError" class="error-message">{{ transactionError }}</div>
+                <div *ngIf="transactionSuccess" class="success-message">{{ transactionSuccess }}</div>
+              </form>
+            </div>
+
+            <!-- TRANSFER Forma -->
+            <div *ngIf="activeTransactionType === 'transfer'" class="transaction-form">
+              <h4>Prenos novca</h4>
+              <form (ngSubmit)="onTransfer()" #transferForm="ngForm">
+                <div class="form-group">
+                  <label for="transferFromAccount">Sa računa:</label>
+                  <select
+                    id="transferFromAccount"
+                    name="transferFromAccount"
+                    [(ngModel)]="transferFormData.fromAccountId"
+                    required
+                    #transferFromAccountInput="ngModel">
+                    <option value="">Izaberi račun</option>
+                    <option *ngFor="let account of activeAccounts" [value]="account.id">
+                      {{ account.accountNumber }} - {{ account.accountType }} ({{ account.balance | number:'1.2-2' }} RSD)
+                    </option>
+                  </select>
+                  <div *ngIf="transferFromAccountInput.invalid && transferFromAccountInput.touched" class="validation-error">
+                    Račun je obavezan
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="transferToAccount">Na račun:</label>
+                  <select
+                    id="transferToAccount"
+                    name="transferToAccount"
+                    [(ngModel)]="transferFormData.toAccountId"
+                    required
+                    #transferToAccountInput="ngModel">
+                    <option value="">Izaberi račun</option>
+                    <option *ngFor="let account of activeAccounts" [value]="account.id">
+                      {{ account.accountNumber }} - {{ account.accountType }} ({{ account.balance | number:'1.2-2' }} RSD)
+                    </option>
+                  </select>
+                  <div *ngIf="transferToAccountInput.invalid && transferToAccountInput.touched" class="validation-error">
+                    Račun je obavezan
+                  </div>
+                  <div *ngIf="transferFormData.fromAccountId && transferFormData.toAccountId && transferFormData.fromAccountId.toString() === transferFormData.toAccountId.toString()"
+                       class="validation-error">
+                    Račun pošiljoca i primaoca ne mogu biti isti
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="transferAmount">Iznos (RSD):</label>
+                  <input
+                    type="number"
+                    id="transferAmount"
+                    name="transferAmount"
+                    [(ngModel)]="transferFormData.amount"
+                    required
+                    min="0.01"
+                    step="0.01"
+                    #transferAmountInput="ngModel"
+                    placeholder="0.00">
+                  <div *ngIf="transferAmountInput.invalid && transferAmountInput.touched" class="validation-error">
+                    Iznos mora biti veći od 0
+                  </div>
+                  <div *ngIf="transferFormData.fromAccountId && transferFormData.amount && getAccountBalance(transferFormData.fromAccountId) < transferFormData.amount"
+                       class="validation-error">
+                    Nemate dovoljno sredstava na računu
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="transferDescription">Opis (opciono):</label>
+                  <input
+                    type="text"
+                    id="transferDescription"
+                    name="transferDescription"
+                    [(ngModel)]="transferFormData.description"
+                    placeholder="Opis transakcije">
+                </div>
+                <button type="submit" [disabled]="loadingTransaction || transferForm.invalid || (transferFormData.fromAccountId && transferFormData.amount && getAccountBalance(transferFormData.fromAccountId) < transferFormData.amount) || (transferFormData.fromAccountId === transferFormData.toAccountId)" class="btn-submit">
+                  <span *ngIf="!loadingTransaction">Prenesi novac</span>
+                  <span *ngIf="loadingTransaction">Procesiranje...</span>
+                </button>
+                <div *ngIf="transactionError" class="error-message">{{ transactionError }}</div>
+                <div *ngIf="transactionSuccess" class="success-message">{{ transactionSuccess }}</div>
+              </form>
+            </div>
+          </div>
+        </div>
+
         <!-- Transakcije -->
         <div class="section">
           <h3>Poslednje transakcije</h3>
@@ -111,13 +340,13 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
           <div class="transactions-list" *ngIf="!loadingTransactions && transactions.length > 0">
             <div *ngFor="let transaction of transactions" class="transaction-item">
               <div class="transaction-info">
-                <span class="transaction-type">{{ transaction.transactionType }}</span>
+                <span class="transaction-type">{{ transaction.transactionType || transaction.type }}</span>
                 <span class="transaction-date">{{ formatDate(transaction.createdAt) }}</span>
               </div>
-              <div class="transaction-amount" [class]="'amount-' + transaction.transactionType.toLowerCase()">
-                {{ transaction.transactionType === 'DEPOSIT' ? '+' : '-' }}{{ transaction.amount | number:'1.2-2' }} RSD
+              <div class="transaction-amount" [class]="'amount-' + (transaction.transactionType || transaction.type || '').toLowerCase()">
+                {{ (transaction.transactionType || transaction.type) === 'DEPOSIT' ? '+' : '-' }}{{ transaction.amount | number:'1.2-2' }} RSD
               </div>
-              <div class="transaction-status" [class]="'status-' + transaction.status.toLowerCase()">
+              <div class="transaction-status" [class]="'status-' + (transaction.status || '').toLowerCase()">
                 {{ transaction.status }}
               </div>
             </div>
@@ -132,6 +361,8 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       max-width: 1400px;
       margin: 0 auto;
       min-height: 100vh;
+      position: relative;
+      z-index: 1;
     }
     .header {
       display: flex;
@@ -149,7 +380,7 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       font-family: 'Poppins', sans-serif;
       font-size: 36px;
       font-weight: 700;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -217,7 +448,7 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
     }
     .btn-primary, .btn-add {
       padding: 12px 24px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
       color: white;
       border: none;
       border-radius: 10px;
@@ -226,18 +457,20 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       font-weight: 600;
       font-family: 'Inter', sans-serif;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4), 0 2px 8px rgba(2, 132, 199, 0.3);
     }
     .btn-primary:hover, .btn-add:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%);
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5), 0 4px 12px rgba(2, 132, 199, 0.4);
     }
     .create-account-form {
-      border: 2px solid #e8e8e8;
+      border: 2px solid rgba(14, 165, 233, 0.3);
       border-radius: 15px;
       padding: 30px;
       margin-bottom: 30px;
-      background: linear-gradient(135deg, #f8f9ff 0%, #fff5f9 100%);
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
     }
     .create-account-form h4 {
       margin-top: 0;
@@ -245,7 +478,10 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       font-family: 'Poppins', sans-serif;
       font-size: 20px;
       font-weight: 600;
-      color: #667eea;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .form-group {
       margin-bottom: 20px;
@@ -259,7 +495,7 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    .form-group select {
+    .form-group select, .form-group input[type="number"], .form-group input[type="text"] {
       width: 100%;
       padding: 14px 16px;
       border: 2px solid #e0e0e0;
@@ -270,10 +506,10 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       background: white;
       transition: all 0.3s ease;
     }
-    .form-group select:focus {
+    .form-group select:focus, .form-group input:focus {
       outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      border-color: #0ea5e9;
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15), 0 0 0 6px rgba(56, 189, 248, 0.1);
     }
     .btn-submit {
       padding: 14px 28px;
@@ -363,7 +599,7 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       letter-spacing: 0.5px;
     }
     .account-type {
-      color: #667eea;
+      color: #0ea5e9;
       font-size: 13px;
       font-weight: 600;
       background: #f0f4ff;
@@ -375,7 +611,7 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
     .account-balance {
       font-size: 32px;
       font-weight: 700;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -408,14 +644,29 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       border: none;
       border-radius: 15px;
       padding: 25px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 80%, #075985 100%);
       color: white;
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4), 0 4px 12px rgba(2, 132, 199, 0.3);
       transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-item::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      transition: transform 0.5s ease;
     }
     .card-item:hover {
       transform: translateY(-5px) scale(1.02);
-      box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+      box-shadow: 0 12px 35px rgba(14, 165, 233, 0.5), 0 8px 20px rgba(2, 132, 199, 0.4);
+    }
+    .card-item:hover::before {
+      transform: rotate(45deg);
     }
     .card-number {
       font-size: 20px;
@@ -429,6 +680,58 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       margin-bottom: 8px;
       opacity: 0.9;
       font-weight: 500;
+    }
+    .transaction-form-container {
+      border: 2px solid rgba(14, 165, 233, 0.3);
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
+    }
+    .transaction-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      border-bottom: 2px solid rgba(14, 165, 233, 0.2);
+      padding-bottom: 10px;
+    }
+    .transaction-tab {
+      padding: 12px 24px;
+      background: transparent;
+      color: #0369a1;
+      border: none;
+      border-bottom: 3px solid transparent;
+      border-radius: 0;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.3s ease;
+      box-shadow: none;
+    }
+    .transaction-tab:hover {
+      background: rgba(14, 165, 233, 0.1);
+      transform: none;
+    }
+    .transaction-tab.active {
+      color: #0ea5e9;
+      border-bottom-color: #0ea5e9;
+      background: rgba(14, 165, 233, 0.15);
+    }
+    .transaction-form {
+      padding-top: 20px;
+    }
+    .transaction-form h4 {
+      margin-top: 0;
+      margin-bottom: 25px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .transactions-list {
       display: flex;
@@ -449,7 +752,8 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
     .transaction-item:hover {
       transform: translateX(5px);
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-      border-color: #667eea;
+      border-color: #0ea5e9;
+      background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
     }
     .transaction-info {
       display: flex;
@@ -506,8 +810,35 @@ export class DashboardComponent implements OnInit {
   createAccountError = '';
   createAccountSuccess = '';
 
+  // Forme za transakcije
+  showTransactionForm = false;
+  activeTransactionType: 'deposit' | 'withdraw' | 'transfer' = 'deposit';
+  loadingTransaction = false;
+  transactionError = '';
+  transactionSuccess = '';
+
+  depositFormData = {
+    accountId: null as number | null,
+    amount: null as number | null,
+    description: ''
+  };
+
+  withdrawFormData = {
+    accountId: null as number | null,
+    amount: null as number | null,
+    description: ''
+  };
+
+  transferFormData = {
+    fromAccountId: null as number | null,
+    toAccountId: null as number | null,
+    amount: null as number | null,
+    description: ''
+  };
+
   ngOnInit() {
     this.currentUser = this.authService.getCurrentUser();
+    this.cdr.detectChanges();
     this.loadData();
   }
 
@@ -520,6 +851,7 @@ export class DashboardComponent implements OnInit {
 
     // Učitaj račune
     this.loadingAccounts = true;
+    this.cdr.detectChanges();
     this.accountService.getAccountsByCustomer(userId).subscribe({
       next: (accounts: Account[]) => {
         this.accounts = accounts;
@@ -543,6 +875,7 @@ export class DashboardComponent implements OnInit {
     if (accounts.length === 0) {
       this.loadingCards = false;
       this.cards = [];
+      this.cdr.detectChanges();
       return;
     }
 
@@ -558,12 +891,14 @@ export class DashboardComponent implements OnInit {
           loadedCount++;
           if (loadedCount === accounts.length) {
             this.loadingCards = false;
+            this.cdr.detectChanges();
           }
         },
         error: () => {
           loadedCount++;
           if (loadedCount === accounts.length) {
             this.loadingCards = false;
+            this.cdr.detectChanges();
           }
         }
       });
@@ -681,6 +1016,185 @@ export class DashboardComponent implements OnInit {
         }
 
         // Forsiraj change detection da odmah prikaže grešku
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  get activeAccounts() {
+    return this.accounts.filter(acc => acc.status === 'ACTIVE');
+  }
+
+  getAccountBalance(accountId: number | string | null): number {
+    if (!accountId) return 0;
+    // Konvertuj u number ako je string (iz select-a)
+    const id = typeof accountId === 'string' ? parseInt(accountId, 10) : accountId;
+    if (isNaN(id)) return 0;
+    const account = this.accounts.find(acc => acc.id === id);
+    return account?.balance ?? 0;
+  }
+
+  onDeposit() {
+    if (!this.depositFormData.accountId || !this.depositFormData.amount || this.depositFormData.amount <= 0) {
+      this.transactionError = 'Molimo unesite ispravne podatke.';
+      return;
+    }
+
+    // Konvertuj u number ako je string (iz select-a)
+    const accountId = typeof this.depositFormData.accountId === 'string'
+      ? parseInt(this.depositFormData.accountId, 10)
+      : this.depositFormData.accountId;
+
+    this.loadingTransaction = true;
+    this.transactionError = '';
+    this.transactionSuccess = '';
+
+    this.transactionService.createDeposit(
+      accountId,
+      this.depositFormData.amount!,
+      this.depositFormData.description || undefined
+    ).subscribe({
+      next: () => {
+        this.loadingTransaction = false;
+        this.transactionSuccess = 'Ulog je uspešno izvršen!';
+        this.depositFormData = { accountId: null, amount: null, description: '' };
+        this.cdr.detectChanges();
+        // Osveži podatke odmah
+        this.loadData();
+        // Sakrij success poruku nakon 3 sekunde
+        setTimeout(() => {
+          this.transactionSuccess = '';
+          this.cdr.detectChanges();
+        }, 3000);
+      },
+      error: (err: any) => {
+        this.loadingTransaction = false;
+        console.error('Deposit error:', err);
+        if (err.error?.message) {
+          this.transactionError = err.error.message;
+        } else if (err.error?.error) {
+          this.transactionError = err.error.error;
+        } else {
+          this.transactionError = 'Greška pri izvršavanju uloga. Pokušaj ponovo.';
+        }
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  onWithdraw() {
+    if (!this.withdrawFormData.accountId || !this.withdrawFormData.amount || this.withdrawFormData.amount <= 0) {
+      this.transactionError = 'Molimo unesite ispravne podatke.';
+      return;
+    }
+
+    // Konvertuj u number ako je string (iz select-a)
+    const accountId = typeof this.withdrawFormData.accountId === 'string'
+      ? parseInt(this.withdrawFormData.accountId, 10)
+      : this.withdrawFormData.accountId;
+
+    const balance = this.getAccountBalance(accountId);
+    if (balance < this.withdrawFormData.amount) {
+      this.transactionError = 'Nemate dovoljno sredstava na računu.';
+      return;
+    }
+
+    this.loadingTransaction = true;
+    this.transactionError = '';
+    this.transactionSuccess = '';
+
+    this.transactionService.createWithdraw(
+      accountId,
+      this.withdrawFormData.amount!,
+      this.withdrawFormData.description || undefined
+    ).subscribe({
+      next: () => {
+        this.loadingTransaction = false;
+        this.transactionSuccess = 'Podizanje novca je uspešno izvršeno!';
+        this.withdrawFormData = { accountId: null, amount: null, description: '' };
+        this.cdr.detectChanges();
+        // Osveži podatke odmah
+        this.loadData();
+        // Sakrij success poruku nakon 3 sekunde
+        setTimeout(() => {
+          this.transactionSuccess = '';
+          this.cdr.detectChanges();
+        }, 3000);
+      },
+      error: (err: any) => {
+        this.loadingTransaction = false;
+        console.error('Withdraw error:', err);
+        if (err.error?.message) {
+          this.transactionError = err.error.message;
+        } else if (err.error?.error) {
+          this.transactionError = err.error.error;
+        } else {
+          this.transactionError = 'Greška pri podizanju novca. Pokušaj ponovo.';
+        }
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  onTransfer() {
+    if (!this.transferFormData.fromAccountId || !this.transferFormData.toAccountId ||
+        !this.transferFormData.amount || this.transferFormData.amount <= 0) {
+      this.transactionError = 'Molimo unesite ispravne podatke.';
+      return;
+    }
+
+    // Konvertuj u number ako su stringovi (iz select-a)
+    const fromId = typeof this.transferFormData.fromAccountId === 'string'
+      ? parseInt(this.transferFormData.fromAccountId, 10)
+      : this.transferFormData.fromAccountId;
+    const toId = typeof this.transferFormData.toAccountId === 'string'
+      ? parseInt(this.transferFormData.toAccountId, 10)
+      : this.transferFormData.toAccountId;
+
+    if (fromId === toId) {
+      this.transactionError = 'Račun pošiljoca i primaoca ne mogu biti isti.';
+      return;
+    }
+
+    const balance = this.getAccountBalance(fromId);
+    if (balance < this.transferFormData.amount) {
+      this.transactionError = 'Nemate dovoljno sredstava na računu.';
+      return;
+    }
+
+    this.loadingTransaction = true;
+    this.transactionError = '';
+    this.transactionSuccess = '';
+
+    this.transactionService.createTransfer(
+      fromId,
+      toId,
+      this.transferFormData.amount!,
+      this.transferFormData.description || undefined
+    ).subscribe({
+      next: () => {
+        this.loadingTransaction = false;
+        this.transactionSuccess = 'Prenos novca je uspešno izvršen!';
+        this.transferFormData = { fromAccountId: null, toAccountId: null, amount: null, description: '' };
+        this.cdr.detectChanges();
+        // Osveži podatke odmah
+        this.loadData();
+        // Sakrij success poruku nakon 3 sekunde
+        setTimeout(() => {
+          this.transactionSuccess = '';
+          this.cdr.detectChanges();
+        }, 3000);
+      },
+      error: (err: any) => {
+        this.loadingTransaction = false;
+        console.error('Transfer error:', err);
+        if (err.error?.message) {
+          this.transactionError = err.error.message;
+        } else if (err.error?.error) {
+          this.transactionError = err.error.error;
+        } else {
+          this.transactionError = 'Greška pri prenosu novca. Pokušaj ponovo.';
+        }
         this.cdr.detectChanges();
       }
     });

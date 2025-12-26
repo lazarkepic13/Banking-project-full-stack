@@ -5,14 +5,25 @@ import { environment } from '../../environments/environment';
 
 export interface Transaction {
   id?: number;
-  transactionType: string;
+  type?: string; // DEPOSIT, WITHDRAW, TRANSFER
+  transactionType?: string; // Backward compatibility
   amount: number;
-  status: string;
+  status?: string;
   description?: string;
-  fromAccountId?: number;
-  toAccountId?: number;
+  fromAccount?: { id: number };
+  toAccount?: { id: number };
+  fromAccountId?: number; // Backward compatibility
+  toAccountId?: number; // Backward compatibility
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface CreateTransactionRequest {
+  type: string; // DEPOSIT, WITHDRAW, TRANSFER
+  amount: number;
+  fromAccount?: { id: number };
+  toAccount?: { id: number };
+  description?: string;
 }
 
 @Injectable({
@@ -35,6 +46,37 @@ export class TransactionService {
   }
 
   createTransaction(transaction: Transaction): Observable<Transaction> {
+    return this.http.post<Transaction>(`${this.apiUrl}/transactions`, transaction);
+  }
+
+  createDeposit(toAccountId: number, amount: number, description?: string): Observable<Transaction> {
+    const transaction: CreateTransactionRequest = {
+      type: 'DEPOSIT',
+      amount: amount,
+      toAccount: { id: toAccountId },
+      description: description
+    };
+    return this.http.post<Transaction>(`${this.apiUrl}/transactions`, transaction);
+  }
+
+  createWithdraw(fromAccountId: number, amount: number, description?: string): Observable<Transaction> {
+    const transaction: CreateTransactionRequest = {
+      type: 'WITHDRAW',
+      amount: amount,
+      fromAccount: { id: fromAccountId },
+      description: description
+    };
+    return this.http.post<Transaction>(`${this.apiUrl}/transactions`, transaction);
+  }
+
+  createTransfer(fromAccountId: number, toAccountId: number, amount: number, description?: string): Observable<Transaction> {
+    const transaction: CreateTransactionRequest = {
+      type: 'TRANSFER',
+      amount: amount,
+      fromAccount: { id: fromAccountId },
+      toAccount: { id: toAccountId },
+      description: description
+    };
     return this.http.post<Transaction>(`${this.apiUrl}/transactions`, transaction);
   }
 }
