@@ -85,16 +85,33 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
         <!-- Kartice -->
         <div class="section">
           <h3>Moje kartice</h3>
-          <div *ngIf="loadingCards" class="loading">Učitavanje...</div>
+          <div *ngIf="loadingCards" class="loading">Učitavanje kartica...</div>
           <div *ngIf="!loadingCards && cards.length === 0" class="no-data">
             Nemate nijednu karticu.
           </div>
           <div class="cards-grid" *ngIf="!loadingCards && cards.length > 0">
-            <div *ngFor="let card of cards" class="card-item">
+            <div
+              *ngFor="let card of cards"
+              class="card-item"
+              [class.card-debit]="getCardType(card) === 'DEBIT'"
+              [class.card-credit]="getCardType(card) === 'CREDIT'"
+              [class.card-virtual]="getCardType(card) === 'VIRTUAL'">
+              <div class="card-chip"></div>
               <div class="card-number">{{ formatCardNumber(card.cardNumber) }}</div>
-              <div class="card-type">{{ card.cardType }}</div>
-              <div class="card-expiry">Ističe: {{ card.expiryDate }}</div>
-              <div class="card-status" [class]="'status-' + card.status.toLowerCase()">
+              <div class="card-info">
+                <div class="card-holder-label">Cardholder</div>
+                <div class="card-holder-name">{{ getCardholderName(card) }}</div>
+              </div>
+              <div class="card-footer">
+                <div class="card-expiry">
+                  <span class="expiry-label">Valid Thru</span>
+                  <span class="expiry-date">{{ formatExpiryDate(card.expiryDate) }}</span>
+                </div>
+                <div class="card-type-badge" [class]="'type-' + getCardType(card).toLowerCase()">
+                  {{ getCardType(card) }}
+                </div>
+              </div>
+              <div class="card-status-badge" [class]="'status-' + card.status.toLowerCase()">
                 {{ card.status }}
               </div>
             </div>
@@ -342,12 +359,15 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
               <div class="transaction-info">
                 <span class="transaction-type">{{ transaction.transactionType || transaction.type }}</span>
                 <span class="transaction-date">{{ formatDate(transaction.createdAt) }}</span>
+                <span *ngIf="transaction.description" class="transaction-description">{{ transaction.description }}</span>
               </div>
-              <div class="transaction-amount" [class]="'amount-' + (transaction.transactionType || transaction.type || '').toLowerCase()">
-                {{ (transaction.transactionType || transaction.type) === 'DEPOSIT' ? '+' : '-' }}{{ transaction.amount | number:'1.2-2' }} RSD
-              </div>
-              <div class="transaction-status" [class]="'status-' + (transaction.status || '').toLowerCase()">
-                {{ transaction.status }}
+              <div class="transaction-right">
+                <div class="transaction-amount" [class]="'amount-' + (transaction.transactionType || transaction.type || '').toLowerCase()">
+                  {{ (transaction.transactionType || transaction.type) === 'DEPOSIT' ? '+' : '-' }}{{ transaction.amount | number:'1.2-2' }} RSD
+                </div>
+                <div class="transaction-status" [class]="'status-' + (transaction.status || '').toLowerCase()">
+                  {{ transaction.status }}
+                </div>
               </div>
             </div>
           </div>
@@ -637,49 +657,203 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
     }
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
       gap: 25px;
     }
     .card-item {
       border: none;
-      border-radius: 15px;
-      padding: 25px;
-      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 80%, #075985 100%);
+      border-radius: 20px;
+      padding: 30px;
       color: white;
-      box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4), 0 4px 12px rgba(2, 132, 199, 0.3);
-      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       position: relative;
       overflow: hidden;
+      aspect-ratio: 1.585 / 1;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 80%, #075985 100%);
     }
-    .card-item::before {
+
+    /* DEBIT Card - Mix tamno zelene i tamno plave */
+    .card-item.card-debit {
+      background: linear-gradient(135deg, #1e3a5f 0%, #1e4d3a 30%, #2d5a4f 60%, #1e3a5f 100%);
+      box-shadow: 0 10px 30px rgba(30, 58, 95, 0.4), 0 4px 12px rgba(30, 77, 58, 0.3);
+    }
+    .card-item.card-debit::before {
       content: '';
       position: absolute;
       top: -50%;
       right: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-      transition: transform 0.5s ease;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+      transition: transform 0.6s ease;
     }
-    .card-item:hover {
-      transform: translateY(-5px) scale(1.02);
-      box-shadow: 0 12px 35px rgba(14, 165, 233, 0.5), 0 8px 20px rgba(2, 132, 199, 0.4);
-    }
-    .card-item:hover::before {
+    .card-item.card-debit:hover::before {
       transform: rotate(45deg);
     }
-    .card-number {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 15px;
-      letter-spacing: 3px;
-      font-family: 'Inter', sans-serif;
+
+    /* CREDIT Card - Manje sjajna zlatna, luksuzna */
+    .card-item.card-credit {
+      background: linear-gradient(135deg, #d4af37 0%, #b8941f 40%, #9a7a15 80%, #7d5f0f 100%);
+      box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4), 0 4px 12px rgba(184, 148, 31, 0.3);
     }
-    .card-type, .card-expiry {
+    .card-item.card-credit::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+      transition: transform 0.6s ease;
+    }
+    .card-item.card-credit:hover::before {
+      transform: rotate(45deg);
+    }
+    .card-item.card-credit::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* VIRTUAL Card - Srebrna */
+    .card-item.card-virtual {
+      background: linear-gradient(135deg, #c0c0c0 0%, #808080 50%, #606060 100%);
+      box-shadow: 0 10px 30px rgba(192, 192, 192, 0.4), 0 4px 12px rgba(128, 128, 128, 0.3);
+    }
+
+    .card-item:hover {
+      transform: translateY(-8px) scale(1.03);
+    }
+    .card-item.card-debit:hover {
+      box-shadow: 0 15px 40px rgba(30, 58, 95, 0.6), 0 8px 20px rgba(30, 77, 58, 0.4);
+    }
+    .card-item.card-credit:hover {
+      box-shadow: 0 15px 40px rgba(212, 175, 55, 0.5), 0 8px 20px rgba(184, 148, 31, 0.4);
+    }
+    .card-item.card-virtual:hover {
+      box-shadow: 0 15px 40px rgba(192, 192, 192, 0.6), 0 8px 20px rgba(128, 128, 128, 0.4);
+    }
+
+    .card-chip {
+      width: 50px;
+      height: 40px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .card-chip::before {
+      content: '';
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 1px;
+    }
+    .card-chip::after {
+      content: '';
+      position: absolute;
+      top: 12px;
+      left: 8px;
+      right: 8px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 1px;
+    }
+
+    .card-number {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 20px 0;
+      letter-spacing: 4px;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .card-info {
+      margin: 15px 0;
+    }
+    .card-holder-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.8;
+      margin-bottom: 4px;
+    }
+    .card-holder-name {
+      font-size: 16px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: auto;
+    }
+    .card-expiry {
+      display: flex;
+      flex-direction: column;
+    }
+    .expiry-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.8;
+      margin-bottom: 4px;
+    }
+    .expiry-date {
       font-size: 14px;
-      margin-bottom: 8px;
-      opacity: 0.9;
-      font-weight: 500;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-type-badge {
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      z-index: 2;
+    }
+
+    .card-status-badge {
+      position: absolute;
+      top: 25px;
+      left: 30px;
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      z-index: 2;
+    }
+    .card-status-badge.status-blocked {
+      background: rgba(255, 0, 0, 0.4);
     }
     .transaction-form-container {
       border: 2px solid rgba(14, 165, 233, 0.3);
@@ -744,7 +918,7 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       padding: 20px;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       background: white;
       transition: all 0.3s ease;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -759,6 +933,7 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       display: flex;
       flex-direction: column;
       gap: 6px;
+      flex: 1;
     }
     .transaction-type {
       font-weight: 600;
@@ -770,6 +945,22 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       font-size: 13px;
       color: #888;
       font-weight: 500;
+    }
+    .transaction-description {
+      font-size: 14px;
+      color: #666;
+      font-style: italic;
+      margin-top: 4px;
+      padding: 6px 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      border-left: 3px solid #0ea5e9;
+    }
+    .transaction-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
     }
     .transaction-amount {
       font-size: 22px;
@@ -916,27 +1107,45 @@ export class DashboardComponent implements OnInit {
     this.loadingTransactions = true;
     this.transactions = [];
     let loadedCount = 0;
+    const transactionMap = new Map<number, Transaction>();
 
     // Učitaj transakcije za svaki račun
     accounts.forEach(account => {
       this.transactionService.getTransactionsByAccount(account.id!).subscribe({
         next: (accountTransactions: Transaction[]) => {
-          this.transactions = [...this.transactions, ...accountTransactions];
+          // Dodaj sve transakcije u mapu po ID-u da eliminišemo duplikate
+          accountTransactions.forEach(transaction => {
+            if (transaction.id && !transactionMap.has(transaction.id)) {
+              transactionMap.set(transaction.id, transaction);
+            }
+          });
+
           loadedCount++;
           if (loadedCount === accounts.length) {
-            // Sortiraj po datumu i uzmi poslednjih 10
-            this.transactions = this.transactions
-              .sort((a: Transaction, b: Transaction) =>
-                new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-              )
+            // Konvertuj mapu u niz, sortiraj po datumu i uzmi poslednjih 10
+            this.transactions = Array.from(transactionMap.values())
+              .sort((a: Transaction, b: Transaction) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+              })
               .slice(0, 10);
             this.loadingTransactions = false;
             this.cdr.detectChanges();
           }
         },
-        error: () => {
+        error: (err) => {
+          console.error('Error loading transactions for account:', account.id, err);
           loadedCount++;
           if (loadedCount === accounts.length) {
+            // U svakom slučaju, postavi transakcije koje smo uspeli da učitamo
+            this.transactions = Array.from(transactionMap.values())
+              .sort((a: Transaction, b: Transaction) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+              })
+              .slice(0, 10);
             this.loadingTransactions = false;
             this.cdr.detectChanges();
           }
@@ -953,6 +1162,27 @@ export class DashboardComponent implements OnInit {
   formatDate(dateStr: string | undefined): string {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString('sr-RS');
+  }
+
+  getCardType(card: any): string {
+    // Backend može da vrati 'type' ili 'cardType'
+    return card.cardType || card.type || 'DEBIT';
+  }
+
+  getCardholderName(card: any): string {
+    // Ako card ima cardholderName, koristi to, inače koristi current user ime
+    if (card.cardholderName) {
+      return card.cardholderName;
+    }
+    return this.currentUser ? `${this.currentUser.firstName} ${this.currentUser.lastName}` : '';
+  }
+
+  formatExpiryDate(dateStr: string | undefined): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${month}/${year}`;
   }
 
   onCreateAccount() {

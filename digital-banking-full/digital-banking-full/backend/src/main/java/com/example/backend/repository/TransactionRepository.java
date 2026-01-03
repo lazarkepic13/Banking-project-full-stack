@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.backend.model.Account;
@@ -20,6 +22,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findByFromAccountOrToAccount(Account fromAccount, Account toAccount);
 
+    @Query("SELECT DISTINCT t FROM Transaction t " +
+           "LEFT JOIN FETCH t.fromAccount " +
+           "LEFT JOIN FETCH t.toAccount " +
+           "WHERE t.fromAccount = :account OR t.toAccount = :account")
+    List<Transaction> findByFromAccountOrToAccountWithAccounts(@Param("account") Account account);
+
     List<Transaction> findByType(TransactionType type);
 
     List<Transaction> findByStatus(TransactionStatus status);
@@ -34,4 +42,5 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             LocalDateTime startDate,
             LocalDateTime endDate);
 }
+
 

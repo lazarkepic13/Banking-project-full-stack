@@ -29,6 +29,7 @@ public class TransactionService {
         this.accountRepository = accountRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<Transaction> getAllTransactions() {
         return transactionRepository.findAll();
     }
@@ -37,10 +38,11 @@ public class TransactionService {
         return transactionRepository.findById(id);
     }
 
+    @Transactional(readOnly = true)
     public List<Transaction> getTransactionsByAccount(Long accountId) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + accountId));
-        return transactionRepository.findByFromAccountOrToAccount(account, account);
+        return transactionRepository.findByFromAccountOrToAccountWithAccounts(account);
     }
 
     @Transactional
