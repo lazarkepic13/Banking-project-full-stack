@@ -238,7 +238,7 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
             <h2>Kartice</h2>
             <button
               *ngIf="selectedCustomerId"
-              (click)="showCreateCardForm = !showCreateCardForm"
+              (click)="toggleCreateCardForm()"
               class="btn-primary">
               {{ showCreateCardForm ? 'Otkaži' : 'Kreiraj karticu' }}
             </button>
@@ -892,12 +892,19 @@ export class EmployeeComponent implements OnInit {
       return;
     }
 
+    // Konvertuj u broj ako je string (iz select-a)
+    if (typeof this.selectedCustomerId === 'string') {
+      this.selectedCustomerId = Number(this.selectedCustomerId);
+    }
+
     // Učitaj podatke na osnovu aktivnog taba
     if (this.activeTab === 'accounts') {
       this.loadCustomerAccounts();
     } else if (this.activeTab === 'transactions') {
       this.loadCustomerTransactions();
     } else if (this.activeTab === 'cards') {
+      // Učitaj i račune jer su potrebni za kreiranje kartice
+      this.loadCustomerAccounts();
       this.loadCustomerCards();
     }
   }
@@ -910,6 +917,10 @@ export class EmployeeComponent implements OnInit {
       } else if (this.activeTab === 'transactions') {
         this.loadCustomerTransactions();
       } else if (this.activeTab === 'cards') {
+        // Učitaj i račune jer su potrebni za kreiranje kartice
+        if (this.customerAccounts.length === 0) {
+          this.loadCustomerAccounts();
+        }
         this.loadCustomerCards();
       }
     }
@@ -1068,6 +1079,16 @@ export class EmployeeComponent implements OnInit {
     });
   }
 
+  toggleCreateCardForm() {
+    this.showCreateCardForm = !this.showCreateCardForm;
+    // Kada se otvori forma, učitaj račune ako već nisu učitani
+    if (this.showCreateCardForm && this.selectedCustomerId) {
+      if (this.customerAccounts.length === 0) {
+        this.loadCustomerAccounts();
+      }
+    }
+  }
+
   onCreateCard() {
     if (!this.selectedCustomerId || !this.newCard.accountId || !this.newCard.cardType) {
       this.createCardError = 'Molimo unesite ispravne podatke.';
@@ -1078,15 +1099,28 @@ export class EmployeeComponent implements OnInit {
     this.createCardError = '';
     this.createCardSuccess = '';
 
-    const cardRequest: Card = {
-      accountId: this.newCard.accountId,
-      cardType: this.newCard.cardType.toUpperCase(),
-      cardNumber: '', // Backend će generisati
-      status: 'ACTIVE',
-      expiryDate: '' // Backend će generisati
+    // Konvertuj accountId u number (iz select-a dolazi kao string)
+    const accountId = typeof this.newCard.accountId === 'string'
+      ? Number(this.newCard.accountId)
+      : this.newCard.accountId;
+
+    // Proveri da li je accountId validan broj
+    if (!accountId || isNaN(accountId)) {
+      this.loadingCreateCard = false;
+      this.createCardError = 'Neispravan ID računa.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // Pošalji samo accountId i cardType - backend će generisati sve ostalo
+    const cardRequest = {
+      accountId: accountId,
+      cardType: this.newCard.cardType.toUpperCase()
     };
 
-    this.cardService.createCard(cardRequest).subscribe({
+    console.log('Sending card request:', cardRequest);
+
+    this.cardService.createCard(cardRequest as any).subscribe({
       next: () => {
         this.loadingCreateCard = false;
         this.createCardSuccess = 'Kartica je uspešno kreirana!';
@@ -1102,8 +1136,16 @@ export class EmployeeComponent implements OnInit {
       error: (err: any) => {
         this.loadingCreateCard = false;
         console.error('Create card error:', err);
-        if (err.error?.message) {
+        console.error('Error details:', err.error);
+
+        // Prikaži detaljne greške validacije ako postoje
+        if (err.error?.errors) {
+          const validationErrors = Object.values(err.error.errors).join(', ');
+          this.createCardError = `Greška validacije: ${validationErrors}`;
+        } else if (err.error?.message) {
           this.createCardError = err.error.message;
+        } else if (err.error?.error) {
+          this.createCardError = `${err.error.error}: ${err.error.message || 'Invalid input data'}`;
         } else {
           this.createCardError = 'Greška pri kreiranju kartice.';
         }
@@ -1145,7 +1187,12 @@ export class EmployeeComponent implements OnInit {
   }
 
   getSelectedCustomerName(): string {
-    const customer = this.customers.find(c => c.id === this.selectedCustomerId);
+    if (!this.selectedCustomerId) return '';
+    // Konvertuj u broj ako je string (iz select-a)
+    const customerId = typeof this.selectedCustomerId === 'string'
+      ? Number(this.selectedCustomerId)
+      : this.selectedCustomerId;
+    const customer = this.customers.find(c => c.id === customerId);
     return customer ? `${customer.firstName} ${customer.lastName}` : '';
   }
 

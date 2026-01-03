@@ -96,6 +96,14 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
 
+        // Log za debugging - proveri koji objekat se validira
+        Object target = ex.getBindingResult().getTarget();
+        System.out.println("=== VALIDATION ERROR ===");
+        System.out.println("Target object class: " + (target != null ? target.getClass().getName() : "null"));
+        System.out.println("Target object: " + target);
+        System.out.println("Validation errors: " + errors);
+        System.out.println("Request path: " + request.getDescription(false));
+
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", java.time.LocalDateTime.now());
         errorResponse.put("status", HttpStatus.BAD_REQUEST.value());

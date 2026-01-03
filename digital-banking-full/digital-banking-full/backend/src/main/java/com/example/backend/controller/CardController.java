@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.backend.dto.CreateCardRequest;
 import com.example.backend.model.Card;
 import com.example.backend.service.CardService;
 
@@ -55,8 +56,10 @@ public class CardController {
     }
 
     @PostMapping
-    public ResponseEntity<Card> createCard(@Valid @RequestBody Card card) {
-        Card createdCard = cardService.createCard(card);
+    public ResponseEntity<Card> createCard(@Valid @RequestBody CreateCardRequest request) {
+        // Log za debugging
+        System.out.println("Received CreateCardRequest - accountId: " + request.getAccountId() + ", cardType: " + request.getCardType());
+        Card createdCard = cardService.createCard(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdCard);
     }
 
