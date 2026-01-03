@@ -309,11 +309,28 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
               Klijent nema kartica.
             </div>
             <div *ngIf="!loadingCards && customerCards.length > 0" class="cards-grid">
-              <div *ngFor="let card of customerCards" class="card-item">
+              <div
+                *ngFor="let card of customerCards"
+                class="card-item"
+                [class.card-debit]="getCardType(card) === 'DEBIT'"
+                [class.card-credit]="getCardType(card) === 'CREDIT'"
+                [class.card-virtual]="getCardType(card) === 'VIRTUAL'">
+                <div class="card-chip"></div>
                 <div class="card-number">{{ formatCardNumber(card.cardNumber) }}</div>
-                <div class="card-type">{{ card.cardType }}</div>
-                <div class="card-expiry">Ističe: {{ card.expiryDate }}</div>
-                <div class="card-status" [class]="'status-' + card.status.toLowerCase()">
+                <div class="card-info">
+                  <div class="card-holder-label">Cardholder</div>
+                  <div class="card-holder-name">{{ getCardholderName(card) }}</div>
+                </div>
+                <div class="card-footer">
+                  <div class="card-expiry">
+                    <span class="expiry-label">Valid Thru</span>
+                    <span class="expiry-date">{{ formatExpiryDate(card.expiryDate) }}</span>
+                  </div>
+                  <div class="card-type-badge" [class]="'type-' + getCardType(card).toLowerCase()">
+                    {{ getCardType(card) }}
+                  </div>
+                </div>
+                <div class="card-status-badge" [class]="'status-' + card.status.toLowerCase()">
                   {{ card.status }}
                 </div>
               </div>
@@ -738,55 +755,228 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
     }
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
       gap: 25px;
     }
     .card-item {
       border: none;
-      border-radius: 15px;
-      padding: 25px;
-      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 80%, #075985 100%);
+      border-radius: 20px;
+      padding: 30px;
       color: white;
-      box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4), 0 4px 12px rgba(2, 132, 199, 0.3);
-      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       position: relative;
       overflow: hidden;
+      /* Pravougaonik - standardni format kreditne kartice (1.585:1) */
+      aspect-ratio: 1.585 / 1;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      /* Default boja ako nije DEBIT, CREDIT ili VIRTUAL */
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 80%, #075985 100%);
     }
-    .card-item::before {
+
+    /* DEBIT Card - Mix tamno zelene i tamno plave */
+    .card-item.card-debit {
+      background: linear-gradient(135deg, #1e3a5f 0%, #1e4d3a 30%, #2d5a4f 60%, #1e3a5f 100%);
+      box-shadow: 0 10px 30px rgba(30, 58, 95, 0.4), 0 4px 12px rgba(30, 77, 58, 0.3);
+    }
+    .card-item.card-debit::before {
       content: '';
       position: absolute;
       top: -50%;
       right: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-      transition: transform 0.5s ease;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+      transition: transform 0.6s ease;
     }
+    .card-item.card-debit:hover::before {
+      transform: rotate(45deg);
+    }
+
+    /* CREDIT Card - Manje sjajna zlatna, luksuzna */
+    .card-item.card-credit {
+      background: linear-gradient(135deg, #d4af37 0%, #b8941f 40%, #9a7a15 80%, #7d5f0f 100%);
+      box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4), 0 4px 12px rgba(184, 148, 31, 0.3);
+    }
+    .card-item.card-credit::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+      transition: transform 0.6s ease;
+    }
+    .card-item.card-credit:hover::before {
+      transform: rotate(45deg);
+    }
+    .card-item.card-credit::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* VIRTUAL Card - Srebrna */
+    .card-item.card-virtual {
+      background: linear-gradient(135deg, #c0c0c0 0%, #808080 50%, #606060 100%);
+      box-shadow: 0 10px 30px rgba(192, 192, 192, 0.4), 0 4px 12px rgba(128, 128, 128, 0.3);
+    }
+
+    /* Osiguraj da kartice uvek imaju boju - fallback */
+    .card-item:not(.card-debit):not(.card-credit):not(.card-virtual) {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 80%, #075985 100%) !important;
+    }
+
     .card-item:hover {
-      transform: translateY(-5px) scale(1.02);
-      box-shadow: 0 12px 35px rgba(14, 165, 233, 0.5), 0 8px 20px rgba(2, 132, 199, 0.4);
+      transform: translateY(-8px) scale(1.03);
     }
+    .card-item.card-debit:hover {
+      box-shadow: 0 15px 40px rgba(30, 58, 95, 0.6), 0 8px 20px rgba(30, 77, 58, 0.4);
+    }
+    .card-item.card-credit:hover {
+      box-shadow: 0 15px 40px rgba(212, 175, 55, 0.5), 0 8px 20px rgba(184, 148, 31, 0.4);
+    }
+    .card-item.card-virtual:hover {
+      box-shadow: 0 15px 40px rgba(192, 192, 192, 0.6), 0 8px 20px rgba(128, 128, 128, 0.4);
+    }
+
+    .card-chip {
+      width: 50px;
+      height: 40px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .card-chip::before {
+      content: '';
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 1px;
+    }
+    .card-chip::after {
+      content: '';
+      position: absolute;
+      top: 12px;
+      left: 8px;
+      right: 8px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 1px;
+    }
+
+
     .card-number {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 700;
-      margin-bottom: 15px;
-      letter-spacing: 3px;
-      font-family: 'Inter', sans-serif;
+      margin: 20px 0;
+      letter-spacing: 4px;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
     }
-    .card-type, .card-expiry {
+
+    .card-info {
+      margin: 15px 0;
+    }
+    .card-holder-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.8;
+      margin-bottom: 4px;
+    }
+    .card-holder-name {
+      font-size: 16px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: auto;
+    }
+    .card-expiry {
+      display: flex;
+      flex-direction: column;
+    }
+    .expiry-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.8;
+      margin-bottom: 4px;
+    }
+    .expiry-date {
       font-size: 14px;
-      margin-bottom: 8px;
-      opacity: 0.9;
-      font-weight: 500;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
     }
-    .card-status {
-      margin-top: 15px;
-      padding: 6px 12px;
-      background: rgba(255, 255, 255, 0.2);
+
+    .card-type-badge {
+      padding: 8px 16px;
       border-radius: 20px;
       font-size: 12px;
-      font-weight: 600;
-      display: inline-block;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      backdrop-filter: blur(10px);
+    }
+    .card-type-badge.type-debit {
+      background: rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .card-type-badge.type-credit {
+      background: rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+    }
+    .card-type-badge.type-virtual {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .card-status-badge {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      padding: 6px 14px;
+      border-radius: 15px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .card-status-badge.status-active {
+      background: rgba(40, 167, 69, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+    }
+    .card-status-badge.status-blocked {
+      background: rgba(220, 53, 69, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
     }
   `]
 })
@@ -885,10 +1075,14 @@ export class EmployeeComponent implements OnInit {
   }
 
   onCustomerSelected() {
+    console.log('onCustomerSelected called, customer:', this.selectedCustomerId, 'activeTab:', this.activeTab);
+
     if (!this.selectedCustomerId) {
       this.customerAccounts = [];
       this.customerTransactions = [];
       this.customerCards = [];
+      this.loadingCards = false;
+      this.cdr.detectChanges();
       return;
     }
 
@@ -903,27 +1097,58 @@ export class EmployeeComponent implements OnInit {
     } else if (this.activeTab === 'transactions') {
       this.loadCustomerTransactions();
     } else if (this.activeTab === 'cards') {
-      // Učitaj i račune jer su potrebni za kreiranje kartice
-      this.loadCustomerAccounts();
-      this.loadCustomerCards();
+      // Resetuj kartice i postavi loading state
+      this.customerCards = [];
+      this.loadingCards = true;
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+      // Učitaj kartice - loadCustomerCards() će interno učitati račune
+      // Koristi setTimeout da osiguraš da se Angular change detection završi
+      setTimeout(() => {
+        console.log('Calling loadCustomerCards from onCustomerSelected, customer:', this.selectedCustomerId);
+        if (this.selectedCustomerId) {
+          this.loadCustomerCards();
+        } else {
+          this.loadingCards = false;
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+        }
+      }, 100);
     }
   }
 
   onTabChange() {
-    // Kada se promeni tab, učitaj odgovarajuće podatke ako je klijent izabran
-    if (this.selectedCustomerId) {
-      if (this.activeTab === 'accounts') {
+    console.log('Tab changed to:', this.activeTab, 'Selected customer:', this.selectedCustomerId);
+    // Kada se promeni tab, učitaj odgovarajuće podatke
+    if (this.activeTab === 'accounts') {
+      if (this.selectedCustomerId) {
         this.loadCustomerAccounts();
-      } else if (this.activeTab === 'transactions') {
-        this.loadCustomerTransactions();
-      } else if (this.activeTab === 'cards') {
-        // Učitaj i račune jer su potrebni za kreiranje kartice
-        if (this.customerAccounts.length === 0) {
-          this.loadCustomerAccounts();
-        }
-        this.loadCustomerCards();
       }
-    }
+    } else if (this.activeTab === 'transactions') {
+      if (this.selectedCustomerId) {
+        this.loadCustomerTransactions();
+      }
+      } else if (this.activeTab === 'cards') {
+        // Resetuj loading state i kartice
+        this.customerCards = [];
+        if (this.selectedCustomerId) {
+          this.loadingCards = true;
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+          // Uvek učitaj kartice kada se otvori tab i postoji izabran klijent
+          // Koristi setTimeout da osiguraš da se Angular change detection završi
+          setTimeout(() => {
+            console.log('Calling loadCustomerCards from onTabChange, customer:', this.selectedCustomerId);
+            if (this.selectedCustomerId) {
+              this.loadCustomerCards();
+            }
+          }, 100);
+        } else {
+          this.loadingCards = false;
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+        }
+      }
   }
 
   loadCustomerAccounts() {
@@ -994,15 +1219,29 @@ export class EmployeeComponent implements OnInit {
   }
 
   loadCustomerCards() {
-    if (!this.selectedCustomerId) return;
+    if (!this.selectedCustomerId) {
+      console.log('Cannot load cards: no customer selected');
+      this.customerCards = [];
+      this.loadingCards = false;
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+      return;
+    }
 
+    console.log('Loading cards for customer:', this.selectedCustomerId);
     this.loadingCards = true;
+    this.customerCards = []; // Resetuj pre učitavanja
+    this.cdr.markForCheck();
+    this.cdr.detectChanges(); // Osveži UI da prikaže loading state
+
     // Prvo učitaj račune, pa onda kartice za svaki račun
     this.accountService.getAccountsByCustomer(this.selectedCustomerId).subscribe({
       next: (accounts: Account[]) => {
+        console.log('Accounts loaded:', accounts.length);
         if (accounts.length === 0) {
           this.customerCards = [];
           this.loadingCards = false;
+          this.cdr.markForCheck();
           this.cdr.detectChanges();
           return;
         }
@@ -1011,19 +1250,53 @@ export class EmployeeComponent implements OnInit {
         this.customerCards = [];
 
         accounts.forEach(account => {
-          this.cardService.getCardsByAccount(account.id!).subscribe({
+          if (!account.id) {
+            loadedCount++;
+            if (loadedCount === accounts.length) {
+              this.loadingCards = false;
+              this.cdr.markForCheck();
+              this.cdr.detectChanges();
+            }
+            return;
+          }
+
+          console.log('Loading cards for account:', account.id);
+          this.cardService.getCardsByAccount(account.id).subscribe({
             next: (cards: Card[]) => {
-              this.customerCards = [...this.customerCards, ...cards];
+              console.log('Cards loaded for account', account.id, ':', cards.length);
+              this.customerCards = [...this.customerCards, ...(cards || [])];
               loadedCount++;
               if (loadedCount === accounts.length) {
+                console.log('All cards loaded. Total:', this.customerCards.length);
+                console.log('Setting loadingCards to false');
                 this.loadingCards = false;
+                console.log('loadingCards after reset:', this.loadingCards);
+                console.log('customerCards length:', this.customerCards.length);
+                console.log('showCreateCardForm:', this.showCreateCardForm);
+                console.log('selectedCustomerId:', this.selectedCustomerId);
+                console.log('activeTab:', this.activeTab);
+                // Osiguraj da se showCreateCardForm resetuje ako je slučajno postavljen na true
+                if (this.showCreateCardForm) {
+                  console.log('WARNING: showCreateCardForm is true, resetting to false');
+                  this.showCreateCardForm = false;
+                }
+                // Koristi markForCheck() umesto detectChanges() za bolje uklapanje u Angular lifecycle
+                this.cdr.markForCheck();
                 this.cdr.detectChanges();
+                // Dodatni setTimeout da osiguraš da se UI osveži
+                setTimeout(() => {
+                  console.log('Final check - loadingCards:', this.loadingCards, 'customerCards:', this.customerCards.length, 'showCreateCardForm:', this.showCreateCardForm);
+                  this.cdr.markForCheck();
+                  this.cdr.detectChanges();
+                }, 50);
               }
             },
-            error: () => {
+            error: (err: any) => {
+              console.error('Error loading cards for account:', account.id, err);
               loadedCount++;
               if (loadedCount === accounts.length) {
                 this.loadingCards = false;
+                this.cdr.markForCheck();
                 this.cdr.detectChanges();
               }
             }
@@ -1031,8 +1304,10 @@ export class EmployeeComponent implements OnInit {
         });
       },
       error: (err: any) => {
-        console.error('Error loading customer cards:', err);
+        console.error('Error loading customer accounts for cards:', err);
+        this.customerCards = [];
         this.loadingCards = false;
+        this.cdr.markForCheck();
         this.cdr.detectChanges();
       }
     });
@@ -1081,10 +1356,19 @@ export class EmployeeComponent implements OnInit {
 
   toggleCreateCardForm() {
     this.showCreateCardForm = !this.showCreateCardForm;
+    console.log('toggleCreateCardForm: showCreateCardForm =', this.showCreateCardForm);
     // Kada se otvori forma, učitaj račune ako već nisu učitani
     if (this.showCreateCardForm && this.selectedCustomerId) {
       if (this.customerAccounts.length === 0) {
         this.loadCustomerAccounts();
+      }
+    }
+    // Kada se zatvori forma, osveži kartice ako su već učitane
+    if (!this.showCreateCardForm && this.selectedCustomerId) {
+      console.log('Form closed, checking if cards need to be reloaded');
+      if (this.customerCards.length === 0 && !this.loadingCards) {
+        console.log('No cards loaded, reloading...');
+        this.loadCustomerCards();
       }
     }
   }
@@ -1210,6 +1494,28 @@ export class EmployeeComponent implements OnInit {
   formatCardNumber(cardNumber: string): string {
     if (!cardNumber) return '';
     return cardNumber.replace(/(.{4})/g, '$1 ').trim();
+  }
+
+  formatExpiryDate(expiryDate: string): string {
+    if (!expiryDate) return '';
+    const date = new Date(expiryDate);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${month}/${year}`;
+  }
+
+  getCardType(card: any): string {
+    // Backend može da vrati 'type' ili 'cardType'
+    return card.cardType || card.type || 'DEBIT';
+  }
+
+  getCardholderName(card: any): string {
+    // Ako card ima cardholderName, koristi to, inače koristi customer ime
+    if (card.cardholderName) {
+      return card.cardholderName;
+    }
+    const customer = this.customers.find(c => c.id === this.selectedCustomerId);
+    return customer ? `${customer.firstName} ${customer.lastName}` : '';
   }
 
   getAccountNumber(account: any, accountId?: number): string {

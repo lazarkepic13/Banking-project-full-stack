@@ -11,6 +11,7 @@ export interface Card {
   expiryDate: string;
   cvv?: string;
   accountId?: number;
+  cardholderName?: string;
   createdAt?: string;
   updatedAt?: string;
 }

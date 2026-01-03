@@ -51,6 +51,7 @@ public class Card {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @JsonAlias("cardType")
+    @JsonProperty("cardType") // Serializuj kao cardType u JSON-u
     private CardType type;
 
     @Enumerated(EnumType.STRING)
