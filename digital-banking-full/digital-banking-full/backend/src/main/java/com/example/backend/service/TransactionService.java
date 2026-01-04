@@ -31,7 +31,7 @@ public class TransactionService {
 
     @Transactional(readOnly = true)
     public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAll();
+        return transactionRepository.findAllWithAccounts();
     }
 
     public Optional<Transaction> getTransactionById(Long id) {
