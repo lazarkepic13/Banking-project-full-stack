@@ -114,6 +114,24 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
               <div class="card-status-badge" [class]="'status-' + card.status.toLowerCase()">
                 {{ card.status }}
               </div>
+              <div class="card-actions">
+                <button
+                  *ngIf="card.status === 'ACTIVE' && card.id"
+                  (click)="blockCard(card.id!)"
+                  [disabled]="blockingCardId === card.id"
+                  class="btn-block-card">
+                  <span *ngIf="blockingCardId !== card.id">Blokiraj karticu</span>
+                  <span *ngIf="blockingCardId === card.id">Blokiranje...</span>
+                </button>
+                <button
+                  *ngIf="card.status === 'BLOCKED' && card.id"
+                  (click)="unblockCard(card.id!)"
+                  [disabled]="blockingCardId === card.id"
+                  class="btn-unblock-card">
+                  <span *ngIf="blockingCardId !== card.id">Odblokiraj karticu</span>
+                  <span *ngIf="blockingCardId === card.id">Odblokiranje...</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -841,19 +859,71 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
 
     .card-status-badge {
       position: absolute;
-      top: 25px;
-      left: 30px;
-      padding: 5px 10px;
+      top: 20px;
+      left: 20px;
+      padding: 6px 14px;
       border-radius: 15px;
-      font-size: 10px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       text-transform: uppercase;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
+      letter-spacing: 0.5px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
       z-index: 2;
     }
+    .card-status-badge.status-active {
+      background: rgba(144, 238, 144, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.3) !important;
+      color: #155724 !important;
+      outline: none !important;
+    }
     .card-status-badge.status-blocked {
-      background: rgba(255, 0, 0, 0.4);
+      background: rgba(220, 53, 69, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+    }
+    .card-actions {
+      margin-top: 15px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .btn-block-card, .btn-unblock-card {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Inter', sans-serif;
+      z-index: 10;
+      position: relative;
+    }
+    .btn-block-card {
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+    .btn-block-card:hover:not(:disabled) {
+      background: linear-gradient(135deg, #f87171 0%, #e74c3c 100%);
+      box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+      transform: translateY(-2px);
+    }
+    .btn-unblock-card {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+    .btn-unblock-card:hover:not(:disabled) {
+      background: linear-gradient(135deg, #48d469 0%, #28a745 100%);
+      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+      transform: translateY(-2px);
+    }
+    .btn-block-card:disabled, .btn-unblock-card:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
     }
     .transaction-form-container {
       border: 2px solid rgba(14, 165, 233, 0.3);
@@ -991,6 +1061,11 @@ export class DashboardComponent implements OnInit {
   loadingCards = false;
   loadingTransactions = false;
 
+  // Blokiranje kartica
+  blockingCardId: number | null = null;
+  cardActionError = '';
+  cardActionSuccess = '';
+
   // Forma za kreiranje računa
   showCreateAccountForm = false;
   newAccount: Account = {
@@ -1029,7 +1104,11 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.currentUser = this.authService.getCurrentUser();
-    this.cdr.detectChanges();
+    // Postavi loading state-ove na true pre učitavanja podataka
+    this.loadingAccounts = true;
+    this.loadingCards = true;
+    this.loadingTransactions = true;
+    // Učitaj podatke odmah
     this.loadData();
   }
 
@@ -1040,14 +1119,12 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    // Učitaj račune
-    this.loadingAccounts = true;
-    this.cdr.detectChanges();
+    // Učitaj račune (loadingAccounts je već postavljen na true u ngOnInit)
     this.accountService.getAccountsByCustomer(userId).subscribe({
       next: (accounts: Account[]) => {
         this.accounts = accounts;
         this.loadingAccounts = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
 
         // Učitaj kartice za sve račune korisnika
         this.loadCardsForAccounts(accounts);
@@ -1055,8 +1132,11 @@ export class DashboardComponent implements OnInit {
         // Učitaj transakcije za sve račune korisnika
         this.loadTransactionsForAccounts(accounts);
       },
-      error: () => {
+      error: (err: any) => {
+        console.error('Error loading accounts:', err);
         this.loadingAccounts = false;
+        this.loadingCards = false;
+        this.loadingTransactions = false;
         this.cdr.detectChanges();
       }
     });
@@ -1066,7 +1146,7 @@ export class DashboardComponent implements OnInit {
     if (accounts.length === 0) {
       this.loadingCards = false;
       this.cards = [];
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
       return;
     }
 
@@ -1082,14 +1162,15 @@ export class DashboardComponent implements OnInit {
           loadedCount++;
           if (loadedCount === accounts.length) {
             this.loadingCards = false;
-            this.cdr.detectChanges();
+            this.cdr.markForCheck();
           }
         },
-        error: () => {
+        error: (err) => {
+          console.error('Error loading cards for account:', account.id, err);
           loadedCount++;
           if (loadedCount === accounts.length) {
             this.loadingCards = false;
-            this.cdr.detectChanges();
+            this.cdr.markForCheck();
           }
         }
       });
@@ -1100,7 +1181,7 @@ export class DashboardComponent implements OnInit {
     if (accounts.length === 0) {
       this.loadingTransactions = false;
       this.transactions = [];
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
       return;
     }
 
@@ -1131,7 +1212,7 @@ export class DashboardComponent implements OnInit {
               })
               .slice(0, 10);
             this.loadingTransactions = false;
-            this.cdr.detectChanges();
+            this.cdr.markForCheck();
           }
         },
         error: (err) => {
@@ -1147,7 +1228,7 @@ export class DashboardComponent implements OnInit {
               })
               .slice(0, 10);
             this.loadingTransactions = false;
-            this.cdr.detectChanges();
+            this.cdr.markForCheck();
           }
         }
       });
@@ -1424,6 +1505,90 @@ export class DashboardComponent implements OnInit {
           this.transactionError = err.error.error;
         } else {
           this.transactionError = 'Greška pri prenosu novca. Pokušaj ponovo.';
+        }
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  blockCard(cardId: number) {
+    if (!cardId) {
+      return;
+    }
+
+    this.blockingCardId = cardId;
+    this.cardActionError = '';
+    this.cardActionSuccess = '';
+
+    this.cardService.blockCard(cardId).subscribe({
+      next: () => {
+        this.blockingCardId = null;
+        this.cardActionSuccess = 'Kartica je uspešno blokirana!';
+        this.cdr.detectChanges();
+        // Osveži listu kartica
+        const userId = this.authService.getCurrentUserId();
+        if (userId) {
+          this.accountService.getAccountsByCustomer(userId).subscribe({
+            next: (accounts: Account[]) => {
+              this.loadCardsForAccounts(accounts);
+            }
+          });
+        }
+        // Sakrij success poruku nakon 3 sekunde
+        setTimeout(() => {
+          this.cardActionSuccess = '';
+          this.cdr.detectChanges();
+        }, 3000);
+      },
+      error: (err: any) => {
+        this.blockingCardId = null;
+        console.error('Block card error:', err);
+        if (err.error?.message) {
+          this.cardActionError = err.error.message;
+        } else {
+          this.cardActionError = 'Greška pri blokiranju kartice. Pokušaj ponovo.';
+        }
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  unblockCard(cardId: number) {
+    if (!cardId) {
+      return;
+    }
+
+    this.blockingCardId = cardId;
+    this.cardActionError = '';
+    this.cardActionSuccess = '';
+
+    this.cardService.unblockCard(cardId).subscribe({
+      next: () => {
+        this.blockingCardId = null;
+        this.cardActionSuccess = 'Kartica je uspešno odblokirana!';
+        this.cdr.detectChanges();
+        // Osveži listu kartica
+        const userId = this.authService.getCurrentUserId();
+        if (userId) {
+          this.accountService.getAccountsByCustomer(userId).subscribe({
+            next: (accounts: Account[]) => {
+              this.loadCardsForAccounts(accounts);
+            }
+          });
+        }
+        // Sakrij success poruku nakon 3 sekunde
+        setTimeout(() => {
+          this.cardActionSuccess = '';
+          this.cdr.detectChanges();
+        }, 3000);
+      },
+      error: (err: any) => {
+        this.blockingCardId = null;
+        console.error('Unblock card error:', err);
+        if (err.error?.message) {
+          this.cardActionError = err.error.message;
+        } else {
+          this.cardActionError = 'Greška pri odblokiranju kartice. Pokušaj ponovo.';
         }
         this.cdr.detectChanges();
       }

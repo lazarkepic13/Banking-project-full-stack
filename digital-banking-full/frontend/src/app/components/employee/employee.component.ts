@@ -969,9 +969,9 @@ import { Transaction, TransactionService } from '../../services/transaction.serv
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
     .card-status-badge.status-active {
-      background: rgba(40, 167, 69, 0.9);
+      background: rgba(144, 238, 144, 0.9);
       border: 1px solid rgba(255, 255, 255, 0.3);
-      color: white;
+      color: #155724;
     }
     .card-status-badge.status-blocked {
       background: rgba(220, 53, 69, 0.9);
@@ -1032,22 +1032,23 @@ export class EmployeeComponent implements OnInit {
       this.router.navigate(['/dashboard']);
       return;
     }
+    // Postavi loading state na true pre učitavanja podataka
+    this.loadingCustomers = true;
     this.loadCustomers();
   }
 
   loadCustomers() {
-    this.loadingCustomers = true;
     this.adminService.getAllUsers().subscribe({
       next: (data: any) => {
         this.customers = data.customers || [];
         this.filteredCustomers = this.customers;
         this.loadingCustomers = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err: any) => {
         console.error('Error loading customers:', err);
         this.loadingCustomers = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       }
     });
   }
@@ -1159,12 +1160,12 @@ export class EmployeeComponent implements OnInit {
       next: (accounts: Account[]) => {
         this.customerAccounts = accounts || [];
         this.loadingAccounts = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err: any) => {
         console.error('Error loading customer accounts:', err);
         this.loadingAccounts = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       }
     });
   }
@@ -1197,14 +1198,14 @@ export class EmployeeComponent implements OnInit {
                   new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
                 );
                 this.loadingTransactions = false;
-                this.cdr.detectChanges();
+                this.cdr.markForCheck();
               }
             },
             error: () => {
               loadedCount++;
               if (loadedCount === accounts.length) {
                 this.loadingTransactions = false;
-                this.cdr.detectChanges();
+                this.cdr.markForCheck();
               }
             }
           });
@@ -1213,7 +1214,7 @@ export class EmployeeComponent implements OnInit {
       error: (err: any) => {
         console.error('Error loading customer transactions:', err);
         this.loadingTransactions = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       }
     });
   }

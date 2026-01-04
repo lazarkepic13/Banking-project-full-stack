@@ -38,5 +38,13 @@ export class CardService {
   createCard(card: Card): Observable<Card> {
     return this.http.post<Card>(`${this.apiUrl}/cards`, card);
   }
+
+  blockCard(id: number): Observable<Card> {
+    return this.http.put<Card>(`${this.apiUrl}/cards/${id}/block`, {});
+  }
+
+  unblockCard(id: number): Observable<Card> {
+    return this.http.put<Card>(`${this.apiUrl}/cards/${id}/unblock`, {});
+  }
 }
 
