@@ -28,6 +28,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
            "WHERE t.fromAccount = :account OR t.toAccount = :account")
     List<Transaction> findByFromAccountOrToAccountWithAccounts(@Param("account") Account account);
 
+    @Query("SELECT DISTINCT t FROM Transaction t " +
+           "LEFT JOIN FETCH t.fromAccount " +
+           "LEFT JOIN FETCH t.toAccount")
+    List<Transaction> findAllWithAccounts();
+
     List<Transaction> findByType(TransactionType type);
 
     List<Transaction> findByStatus(TransactionStatus status);
