@@ -222,7 +222,7 @@ import { AuthService } from '../../services/auth.service';
       font-family: 'Poppins', sans-serif;
       font-size: 36px;
       font-weight: 700;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
